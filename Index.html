@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Control de Peso</title>
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#2563eb">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --manu: #2563eb;
+      --cris: #db2777;
+      --gym: #7c3aed;
+      --gym-light: #ede9fe;
+      --weekend: #f59e0b;
+      --weekend-bg: #fffbeb;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #ef4444;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body { padding: 0.8rem 0.6rem 3rem; }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      overflow-x: hidden;
+    }
+    
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; width: 100%; }
+    .tab-btn {
+      flex: 1; padding: 0.7rem 0.3rem; border: none; border-radius: 10px;
+      font-weight: 700; cursor: pointer; background: #e2e8f0; color: var(--muted);
+      font-size: 0.95rem; transition: all 0.2s; text-align: center;
+    }
+    .tab-btn.active.manu-btn { background: var(--manu); color: white; box-shadow: 0 3px 10px rgba(37,99,235,0.25); }
+    .tab-btn.active.cris-btn { background: var(--cris); color: white; box-shadow: 0 3px 10px rgba(219,39,119,0.25); }
+
+    .quick-entry {
+      background: var(--card); border-radius: 14px; padding: 1rem;
+      border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      margin-bottom: 1rem; width: 100%;
+    }
+    .quick-title {
+      font-size: 0.8rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; margin-bottom: 0.6rem; letter-spacing: 0.04em;
+    }
+    
+    .entry-row { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; width: 100%; }
+    .input-weight-main {
+      flex: 1.1; width: 0; min-width: 0; font-size: 1.5rem; font-weight: 800; text-align: center;
+      padding: 0.5rem; border-radius: 10px; border: 2px solid var(--border); outline: none;
+    }
+    .input-weight-main:focus { border-color: var(--manu); }
+    .input-date-main {
+      flex: 1.1; width: 0; min-width: 0; font-size: 0.9rem; font-weight: 600; padding: 0.5rem;
+      border-radius: 10px; border: 1px solid var(--border); outline: none; background: #fff;
+    }
+
+    .gym-toggle-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+      width: 100%; padding: 0.65rem; border-radius: 10px; border: 1.5px solid var(--border);
+      background: #f8fafc; font-weight: 700; font-size: 0.9rem; cursor: pointer; margin-bottom: 0.6rem;
+    }
+    .gym-toggle-btn.active { background: var(--gym-light); border-color: var(--gym); color: var(--gym); }
+
+    .btn-save-main {
+      width: 100%; padding: 0.75rem; border-radius: 10px; border: none;
+      background: #0f172a; color: white; font-size: 1rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-save-main:active { transform: scale(0.98); }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; width: 100%; }
+    .card { background: var(--card); border-radius: 10px; padding: 0.75rem; border: 1px solid var(--border); }
+    .card-title { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 0.2rem; }
+    .card-val { font-size: 1.25rem; font-weight: 800; }
+    .card-sub { font-size: 0.72rem; font-weight: 600; margin-top: 0.15rem; }
+
+    .scenarios-box { background: var(--card); border-radius: 12px; padding: 0.8rem; border: 1px solid var(--border); margin-bottom: 1rem; width: 100%; }
+    .scenario-item { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+    .scenario-item:last-child { border-bottom: none; }
+    .scenario-name { font-weight: 700; }
+    .scenario-date { font-weight: 800; color: var(--text); }
+
+    .weeks-box { margin-bottom: 1rem; width: 100%; }
+    .weeks-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .weeks-scroll { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.3rem; -webkit-overflow-scrolling: touch; width: 100%; }
+    .week-card { min-width: 110px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; flex-shrink: 0; }
+    .week-num { font-size: 0.7rem; font-weight: 700; color: var(--muted); }
+    .week-val { font-size: 1.05rem; font-weight: 800; margin: 0.1rem 0; }
+    .week-gym { font-size: 0.68rem; color: var(--gym); font-weight: 700; }
+
+    .chart-box {
+      background: var(--card); border-radius: 12px; padding: 0.8rem 0.5rem;
+      border: 1px solid var(--border); margin-bottom: 1rem; width: 100%; position: relative;
+    }
+    .chart-box canvas { max-width: 100% !important; }
+
+    .history-card { background: var(--card); border-radius: 12px; padding: 0.8rem; border: 1px solid var(--border); width: 100%; }
+    .table-container { max-height: 260px; overflow-y: auto; overflow-x: hidden; width: 100%; }
+    table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.8rem; }
+    th, td { padding: 0.5rem 0.2rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+    th { color: var(--muted); font-size: 0.7rem; position: sticky; top: 0; background: #fafafa; }
+    tr.is-weekend { background-color: var(--weekend-bg); }
+    .weight-input-tbl { width: 56px; padding: 0.2rem 0.2rem; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 5px; text-align: right; font-size: 0.85rem; }
+    .gym-tbl-btn { border: none; background: none; font-size: 1rem; cursor: pointer; opacity: 0.35; padding: 0.1rem; }
+    .gym-tbl-btn.active { opacity: 1; }
+    .del-btn { border: none; background: none; color: var(--danger); font-size: 1.1rem; cursor: pointer; padding: 0.1rem 0.3rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active cris-btn" onclick="selectUser('cris')">Cris (70 kg)</button>
+    <button class="tab-btn manu-btn" onclick="selectUser('manu')">Manu (95 kg)</button>
+  </div>
+
+  <div class="quick-entry">
+    <div class="quick-title" id="quickEntryTitle">Añadir Peso de Cris</div>
+    <div class="entry-row">
+      <input type="number" step="0.1" inputmode="decimal" class="input-weight-main" id="quickWeight" placeholder="kg">
+      <input type="date" class="input-date-main" id="quickDate">
+    </div>
+    <button type="button" class="gym-toggle-btn" id="quickGymBtn" onclick="toggleQuickGym()">
+      🏋️ Día de Gimnasio: <span id="quickGymTxt">No</span>
+    </button>
+    <button type="button" class="btn-save-main" onclick="saveQuickData()">Guardar Peso</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Peso Actual</div>
+      <div class="card-val" id="currWeight">-</div>
+      <div class="card-sub" id="totalLoss" style="color:var(--success);">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Resta a Meta</div>
+      <div class="card-val" id="remainingKg">-</div>
+      <div class="card-sub" id="remainingTarget" style="color:var(--muted);">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ritmo (Últ. 14d)</div>
+      <div class="card-val" id="rateWeek">-</div>
+      <div class="card-sub" id="rateDay" style="color:var(--muted);">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Gimnasio</div>
+      <div class="card-val" id="gymTotal" style="color:var(--gym);">-</div>
+      <div class="card-sub" id="gymAvg" style="color:var(--gym);">-</div>
+    </div>
+  </div>
+
+  <div class="scenarios-box">
+    <div class="quick-title" style="margin-bottom:0.3rem;">Proyección a Meta</div>
+    <div class="scenario-item">
+      <span class="scenario-name" style="color:#15803d;">🚀 Rápido (+20%)</span>
+      <span class="scenario-date" id="bestDate">-</span>
+    </div>
+    <div class="scenario-item">
+      <span class="scenario-name" style="color:var(--manu);">🎯 Normal (Últimos 14d)</span>
+      <span class="scenario-date" id="normalDate">-</span>
+    </div>
+    <div class="scenario-item">
+      <span class="scenario-name" style="color:#b45309;">🐢 Conservador (-25%)</span>
+      <span class="scenario-date" id="slowDate">-</span>
+    </div>
+  </div>
+
+  <div class="weeks-box">
+    <div class="weeks-title">Pérdida por Semanas</div>
+    <div class="weeks-scroll" id="weeksList"></div>
+  </div>
+
+  <div class="chart-box">
+    <canvas id="weightChart" height="150"></canvas>
+  </div>
+
+  <div class="history-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+      <div class="quick-title" style="margin:0;">Historial</div>
+      <button onclick="resetData()" style="background:none; border:none; color:var(--muted); font-size:0.75rem; cursor:pointer;">Reiniciar</button>
+    </div>
+    <div class="table-container">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th style="width:30%;">Día</th>
+            <th style="width:30%;">Peso</th>
+            <th style="width:16%; text-align:center;">Gym</th>
+            <th style="width:14%;">Var.</th>
+            <th style="width:10%;"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const INITIAL_DATA = {
+  cris: {
+    target: 70.0,
+    color: '#db2777',
+    records: [
+      { date: "2026-09-24", weight: 80.8, gym: false }, { date: "2026-09-25", weight: 80.2, gym: false },
+      { date: "2026-09-26", weight: 80.0, gym: false }, { date: "2026-09-27", weight: 79.2, gym: false },
+      { date: "2026-09-28", weight: 79.2, gym: false }, { date: "2026-09-29", weight: 78.5, gym: false },
+      { date: "2026-09-30", weight: 77.7, gym: false }, { date: "2026-10-01", weight: 77.4, gym: false },
+      { date: "2026-10-02", weight: 77.0, gym: false }, { date: "2026-10-03", weight: 76.9, gym: false },
+      { date: "2026-10-04", weight: 76.9, gym: false }, { date: "2026-10-05", weight: 76.9, gym: false },
+      { date: "2026-10-06", weight: 76.4, gym: false }, { date: "2026-10-07", weight: 76.2, gym: false },
+      { date: "2026-10-08", weight: 75.4, gym: false }, { date: "2026-10-09", weight: 74.6, gym: false },
+      { date: "2026-10-10", weight: 74.5, gym: false }, { date: "2026-10-11", weight: 74.5, gym: false }
+    ]
+  },
+  manu: {
+    target: 95.0,
+    color: '#2563eb',
+    records: [
+      { date: "2026-09-21", weight: 111.5, gym: false }, { date: "2026-09-22", weight: 110.5, gym: false },
+      { date: "2026-09-23", weight: 109.6, gym: false }, { date: "2026-09-24", weight: 108.8, gym: false },
+      { date: "2026-09-25", weight: 108.2, gym: false }, { date: "2026-09-26", weight: 107.9, gym: false },
+      { date: "2026-09-27", weight: 107.8, gym: false }, { date: "2026-09-28", weight: 107.4, gym: false },
+      { date: "2026-09-29", weight: 107.4, gym: false }, { date: "2026-09-30", weight: 107.0, gym: false },
+      { date: "2026-10-01", weight: 106.3, gym: false }, { date: "2026-10-02", weight: 106.0, gym: false },
+      { date: "2026-10-03", weight: 105.7, gym: false }, { date: "2026-10-04", weight: 105.7, gym: false },
+      { date: "2026-10-05", weight: 105.7, gym: false }, { date: "2026-10-06", weight: 105.3, gym: false },
+      { date: "2026-10-07", weight: 104.8, gym: false }, { date: "2026-10-08", weight: 104.4, gym: false },
+      { date: "2026-10-09", weight: 104.2, gym: false }, { date: "2026-10-10", weight: 104.2, gym: false },
+      { date: "2026-10-11", weight: 104.0, gym: false }
+    ]
+  }
+};
+
+let db = JSON.parse(localStorage.getItem('weight_tracker_pwa_v2'));
+if (!db) {
+  db = JSON.parse(JSON.stringify(INITIAL_DATA));
+  saveDb();
+}
+
+let currentUser = 'cris';
+let isGymActive = false;
+let chartInstance = null;
+
+function saveDb() {
+  localStorage.setItem('weight_tracker_pwa_v2', JSON.stringify(db));
+}
+
+function selectUser(user) {
+  currentUser = user;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.${user}-btn`).classList.add('active');
+  document.getElementById('quickEntryTitle').textContent = `Añadir Peso de ${user === 'cris' ? 'Cris' : 'Manu'}`;
+  renderDashboard();
+}
+
+function toggleQuickGym() {
+  isGymActive = !isGymActive;
+  const btn = document.getElementById('quickGymBtn');
+  const txt = document.getElementById('quickGymTxt');
+  if (isGymActive) {
+    btn.classList.add('active');
+    txt.textContent = 'Sí';
+  } else {
+    btn.classList.remove('active');
+    txt.textContent = 'No';
+  }
+}
+
+function saveQuickData() {
+  const date = document.getElementById('quickDate').value;
+  const weight = parseFloat(document.getElementById('quickWeight').value);
+
+  if (!date || isNaN(weight)) {
+    alert("Introduce un peso válido");
+    return;
+  }
+
+  const list = db[currentUser].records;
+  const existingIdx = list.findIndex(r => r.date === date);
+  if (existingIdx >= 0) {
+    list[existingIdx].weight = weight;
+    list[existingIdx].gym = isGymActive;
+  } else {
+    list.push({ date, weight, gym: isGymActive });
+    list.sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  saveDb();
+  renderDashboard();
+  document.getElementById('quickWeight').value = '';
+  if (isGymActive) toggleQuickGym();
+}
+
+function isWeekend(dateStr) {
+  const parts = dateStr.split('-');
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  return d.getDay() === 0 || d.getDay() === 6;
+}
+
+function getShortDate(dateStr) {
+  const parts = dateStr.split('-');
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  const days = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+  return `${days[d.getDay()]} ${parts[2]}/${parts[1]}`;
+}
+
+function updateWeight(date, newWeight) {
+  const val = parseFloat(newWeight);
+  if (isNaN(val) || val <= 0) return;
+  const item = db[currentUser].records.find(r => r.date === date);
+  if (item) {
+    item.weight = val;
+    saveDb();
+    renderDashboard();
+  }
+}
+
+function toggleTableGym(date) {
+  const item = db[currentUser].records.find(r => r.date === date);
+  if (item) {
+    item.gym = !item.gym;
+    saveDb();
+    renderDashboard();
+  }
+}
+
+function deleteRecord(date) {
+  if (!confirm(`¿Borrar el pesaje del ${date}?`)) return;
+  db[currentUser].records = db[currentUser].records.filter(r => r.date !== date);
+  saveDb();
+  renderDashboard();
+}
+
+function resetData() {
+  if (!confirm("¿Reiniciar a los datos originales?")) return;
+  db[currentUser].records = JSON.parse(JSON.stringify(INITIAL_DATA[currentUser].records));
+  saveDb();
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const userObj = db[currentUser];
+  const recs = userObj.records;
+  if (!recs.length) return;
+
+  const firstRec = recs[0];
+  const lastRec = recs[recs.length - 1];
+  const totalDays = Math.max(1, (new Date(lastRec.date) - new Date(firstRec.date)) / (1000 * 60 * 60 * 24));
+  const totalLost = firstRec.weight - lastRec.weight;
+
+  const totalGym = recs.filter(r => r.gym).length;
+  const gymPerWeek = (totalGym / (totalDays / 7)).toFixed(1);
+  document.getElementById('gymTotal').textContent = `${totalGym} días`;
+  document.getElementById('gymAvg').textContent = `~${gymPerWeek} / sem`;
+
+  const lastDateObj = new Date(lastRec.date);
+  const cutoff = new Date(lastDateObj.getTime() - 14 * 86400000);
+  const recent = recs.filter(r => new Date(r.date) >= cutoff);
+  let rateDay = 0;
+  if (recent.length >= 2) {
+    const dDays = Math.max(1, (new Date(recent[recent.length - 1].date) - new Date(recent[0].date)) / 86400000);
+    rateDay = (recent[0].weight - recent[recent.length - 1].weight) / dDays;
+  } else {
+    rateDay = totalLost / totalDays;
+  }
+
+  document.getElementById('currWeight').textContent = `${lastRec.weight.toFixed(1)} kg`;
+  document.getElementById('totalLoss').textContent = `Total: -${totalLost.toFixed(1)} kg`;
+  document.getElementById('rateWeek').textContent = `-${(rateDay * 7).toFixed(2)} kg`;
+  document.getElementById('rateDay').textContent = `-${rateDay.toFixed(2)} kg/día`;
+
+  const remaining = lastRec.weight - userObj.target;
+  document.getElementById('remainingKg').textContent = remaining > 0 ? `${remaining.toFixed(1)} kg` : '¡Meta!';
+  document.getElementById('remainingTarget').textContent = `Meta: ${userObj.target} kg`;
+
+  renderScenarios(remaining, rateDay, lastDateObj);
+  renderWeeklyKpis(recs);
+  renderTable(recs, firstRec);
+  renderChart(userObj);
+}
+
+function renderScenarios(remaining, rate, lastDate) {
+  if (remaining <= 0 || rate <= 0) {
+    document.getElementById('bestDate').textContent = "Conseguido";
+    document.getElementById('normalDate').textContent = "Conseguido";
+    document.getElementById('slowDate').textContent = "Conseguido";
+    return;
+  }
+  const calc = r => {
+    const days = Math.round(remaining / r);
+    const d = new Date(lastDate.getTime() + days * 86400000);
+    return `${d.toLocaleDateString('es-ES', { day:'numeric', month:'short' })} (${days}d)`;
+  };
+  document.getElementById('bestDate').textContent = calc(rate * 1.20);
+  document.getElementById('normalDate').textContent = calc(rate);
+  document.getElementById('slowDate').textContent = calc(rate * 0.75);
+}
+
+function renderWeeklyKpis(recs) {
+  const container = document.getElementById('weeksList');
+  container.innerHTML = '';
+  let cur = new Date(recs[0].date);
+  let w = 1;
+  const lastD = new Date(recs[recs.length - 1].date);
+
+  while (cur <= lastD) {
+    const end = new Date(cur.getTime() + 6 * 86400000);
+    const inW = recs.filter(r => {
+      const d = new Date(r.date);
+      return d >= cur && d <= new Date(end.getTime() + 86399999);
+    });
+
+    if (inW.length > 0) {
+      const diff = inW[inW.length - 1].weight - inW[0].weight;
+      const g = inW.filter(r => r.gym).length;
+      const div = document.createElement('div');
+      div.className = 'week-card';
+      div.innerHTML = `
+        <div class="week-num">Semana ${w}</div>
+        <div class="week-val" style="color:${diff <= 0 ? '#16a34a' : '#ef4444'}">
+          ${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg
+        </div>
+        <div class="week-gym">🏋️ ${g} ${g === 1 ? 'día' : 'días'}</div>
+      `;
+      container.appendChild(div);
+    }
+    cur = new Date(cur.getTime() + 7 * 86400000);
+    w++;
+  }
+}
+
+function renderTable(recs, firstRec) {
+  const tbody = document.querySelector('#historyTable tbody');
+  tbody.innerHTML = '';
+  [...recs].reverse().forEach((r, idx, arr) => {
+    const prev = arr[idx + 1];
+    const diff = prev ? (r.weight - prev.weight).toFixed(1) : '-';
+    const tr = document.createElement('tr');
+    if (isWeekend(r.date)) tr.className = 'is-weekend';
+    tr.innerHTML = `
+      <td><strong>${getShortDate(r.date)}</strong></td>
+      <td>
+        <input class="weight-input-tbl" type="number" step="0.1" inputmode="decimal" value="${r.weight.toFixed(1)}" onchange="updateWeight('${r.date}', this.value)">
+      </td>
+      <td style="text-align:center;">
+        <button class="gym-tbl-btn ${r.gym ? 'active' : ''}" onclick="toggleTableGym('${r.date}')">🏋️</button>
+      </td>
+      <td style="font-size:0.75rem; color:${diff <= 0 ? '#16a34a' : '#ef4444'}">
+        ${diff > 0 ? '+' : ''}${diff}
+      </td>
+      <td>
+        <button class="del-btn" onclick="deleteRecord('${r.date}')">×</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderChart(userObj) {
+  const ctx = document.getElem
